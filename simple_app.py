@@ -1034,6 +1034,9 @@ if run:
                         )
                         st.session_state.current_explanation = explanation
                         
+                        # Clean the explanation - remove any unwanted HTML tags
+                        explanation = explanation.replace("</div>", "")
+                        
                         # Convert explanation text to bullet points
                         explanation_lines = explanation.split("\n")
                         bullet_explanation = ""
