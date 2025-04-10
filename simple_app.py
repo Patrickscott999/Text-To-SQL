@@ -10,6 +10,10 @@ from sqlalchemy import create_engine, inspect
 import time
 import hashlib
 import traceback
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 st.set_page_config(page_title="Text-to-SQL AI", layout="wide")
 

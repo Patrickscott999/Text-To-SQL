@@ -8,4 +8,5 @@ mysql-connector-python
 psycopg2-binary
 pyodbc
 xlsxwriter
-openpyxl 
+openpyxl
+python-dotenv 
