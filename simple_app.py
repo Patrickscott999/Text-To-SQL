@@ -11,11 +11,16 @@ import time
 import hashlib
 import traceback
 from dotenv import load_dotenv
+from openai import OpenAI
 
 # Load environment variables from .env file
 load_dotenv()
 
 st.set_page_config(page_title="Text-to-SQL AI", layout="wide")
+
+# Initialize session state for API key
+if 'api_key' not in st.session_state:
+    st.session_state.api_key = os.environ.get("OPENAI_API_KEY", "")
 
 # Initialize session state for database connection and query caching
 if 'db_connected' not in st.session_state:
@@ -722,9 +727,75 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Sidebar with database connection options
+# Sidebar for database connection
 with st.sidebar:
-    st.title("🗄️ Database Connection")
+    st.title("🌌 Text-to-SQL AI")
+    
+    # API Key Management
+    st.header("🔑 API Key")
+    
+    api_key_container = st.container()
+    
+    with api_key_container:
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, rgba(76, 29, 149, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%); 
+                    padding: 10px; 
+                    border-radius: 8px; 
+                    border-left: 3px solid #8b5cf6;
+                    margin-bottom: 12px;">
+            <p style="margin: 0; padding: 0; font-size: 0.85rem; color: #6d28d9;">
+                Your API key stays in your browser and is never stored on our servers.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        api_key_input = st.text_input(
+            "Enter OpenAI API Key:",
+            type="password",
+            value=st.session_state.api_key,
+            help="This API key is used for all OpenAI operations and is never stored on the server."
+        )
+        
+        if api_key_input != st.session_state.api_key:
+            st.session_state.api_key = api_key_input
+            os.environ["OPENAI_API_KEY"] = api_key_input
+            
+            # Clear validation status when key changes
+            if 'api_key_valid' in st.session_state:
+                del st.session_state.api_key_valid
+            
+        api_key_status = st.empty()
+        
+        # Show API key validation
+        if 'api_key_valid' not in st.session_state and st.session_state.api_key:
+            # We'll validate the API key by making a small request
+            try:
+                with st.spinner("Validating API key..."):
+                    # Make a quick test call to the OpenAI API
+                    client = OpenAI(api_key=st.session_state.api_key)
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[{"role": "user", "content": "test"}],
+                        max_tokens=5
+                    )
+                    st.session_state.api_key_valid = True
+            except Exception as e:
+                st.session_state.api_key_valid = False
+                st.session_state.api_key_error = str(e)
+        
+        if st.session_state.api_key:
+            if st.session_state.get('api_key_valid', False):
+                api_key_status.success("✅ API Key valid")
+            elif 'api_key_valid' in st.session_state:
+                api_key_status.error(f"❌ Invalid API Key: {st.session_state.get('api_key_error', 'Unknown error')}")
+            else:
+                api_key_status.info("🔄 API Key provided (not validated yet)")
+        else:
+            api_key_status.error("⚠️ API Key required to use AI features")
+    
+    st.markdown("---")
+    
+    st.header("🔌 Database Connection")
     
     # Database type selection
     db_type = st.selectbox(
@@ -849,14 +920,6 @@ with st.sidebar:
     if st.session_state.db_connected and st.session_state.schema_text:
         st.markdown("### Database Schema")
         st.markdown(f'<div class="schema-viewer">{st.session_state.schema_text}</div>', unsafe_allow_html=True)
-    
-    # API key status
-    st.markdown("### OpenAI API Status")
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    if not api_key:
-        st.error("⚠️ OpenAI API key not found")
-    else:
-        st.success("✅ OpenAI API key found")
 
 # Main application UI
 st.title("🤖 Ask Your Data – Natural Language to SQL")
@@ -866,6 +929,25 @@ st.markdown("Enter a natural language question below and let AI translate it int
 # Check connection status
 if not st.session_state.db_connected:
     st.warning("⚠️ Please connect to a database using the sidebar options first")
+
+# Check if API key is provided and valid
+has_valid_api_key = st.session_state.get('api_key_valid', False)
+if not has_valid_api_key and not st.session_state.api_key:
+    st.error("⚠️ Please enter your OpenAI API key in the sidebar to use AI features")
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, rgba(76, 29, 149, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%); 
+                padding: 15px; 
+                border-radius: 10px; 
+                margin: 10px 0;">
+        <h4 style="margin-top: 0; color: #6d28d9;">How to get an OpenAI API key:</h4>
+        <ol style="margin-bottom: 0;">
+            <li>Go to <a href="https://platform.openai.com/signup" target="_blank">OpenAI Platform</a> and sign up or log in</li>
+            <li>Navigate to the API Keys section in your account</li>
+            <li>Create a new secret key</li>
+            <li>Copy and paste it into the sidebar field</li>
+        </ol>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Main query area
 col1, col2 = st.columns([3, 1])
@@ -890,179 +972,197 @@ if st.session_state.improved_question and st.session_state.improved_question != 
         st.session_state.user_input = st.session_state.improved_question
         st.experimental_rerun()
 
-# Process query
-if run and user_input.strip() != "":
-    # Check if we have schema info
-    if not st.session_state.schema_info:
-        with st.spinner("🔄 Reading database schema..."):
-            update_schema()
-    
-    # Check if there's an OpenAI API key
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    if not api_key:
-        st.error("⚠️ OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+if run:
+    if not user_input:
+        st.warning("⚠️ Please enter a question first")
+    elif not st.session_state.api_key:
+        st.error("⚠️ Please enter your OpenAI API key in the sidebar to use AI features")
+    elif not st.session_state.get('api_key_valid', False) and 'api_key_valid' in st.session_state:
+        st.error("❌ The provided API key is invalid. Please check and update your API key.")
     else:
-        # Generate question improvement suggestion
-        with st.spinner("🔄 Analyzing your question..."):
-            improved_question = suggest_question_improvements(user_input, st.session_state.schema_info)
-            if improved_question and improved_question != user_input:
-                st.session_state.improved_question = improved_question
-        
-        with st.spinner("💡 Generating SQL using AI..."):
-            try:
-                # Generate SQL query using GPT
-                generated_sql = gpt_generate_sql(user_input, st.session_state.schema_info)
-                st.session_state.current_sql = generated_sql
-                
-                # SQL editing option
-                st.markdown("### 🧾 Generated SQL")
-                st.markdown('<span class="ai-badge">AI Generated</span> You can edit this SQL before execution:', unsafe_allow_html=True)
-                
-                # Allow user to edit the SQL
-                edited_sql = st.text_area("Edit SQL Query:", value=generated_sql, height=150, key="sql_editor")
-                
-                # Check if SQL was edited
-                sql_to_execute = edited_sql
-                st.session_state.sql_edited = (edited_sql != generated_sql)
-                
-                # Display SQL explanation in plain English
-                with st.spinner("🔄 Generating explanation..."):
-                    explanation = explain_query(sql_to_execute, st.session_state.schema_info)
-                    st.session_state.current_explanation = explanation
+        # Check connection
+        if not st.session_state.db_connected:
+            st.error("⚠️ Please connect to a database first")
+        else:
+            # Check if we have schema info
+            if not st.session_state.schema_info:
+                with st.spinner("🔄 Reading database schema..."):
+                    update_schema()
+            
+            # Generate question improvement suggestion
+            with st.spinner("🔄 Analyzing your question..."):
+                improved_question = suggest_question_improvements(
+                    user_input, 
+                    st.session_state.schema_info,
+                    api_key=st.session_state.api_key
+                )
+                if improved_question and improved_question != user_input:
+                    st.session_state.improved_question = improved_question
+            
+            with st.spinner("💡 Generating SQL using AI..."):
+                try:
+                    # Generate SQL query using GPT
+                    generated_sql = gpt_generate_sql(
+                        user_input, 
+                        st.session_state.schema_info,
+                        api_key=st.session_state.api_key
+                    )
+                    st.session_state.current_sql = generated_sql
                     
-                    st.markdown("### 📖 Query Explanation")
-                    formatted_explanation = f"""
-                    <div class="explanation-box">
-                        <span class="ai-badge">SQL Explained</span>
-                        <div class="explanation-content">
-                            {explanation}
-                        </div>
-                    </div>
-                    """
-                    st.markdown(formatted_explanation, unsafe_allow_html=True)
-                
-                # Execute button for the possibly edited SQL
-                execute_query = st.button("▶️ Execute SQL")
-                
-                if execute_query:
-                    try:
-                        # Execute the SQL query with caching
-                        with st.spinner("⚙️ Executing SQL query..."):
-                            df, error, from_cache = execute_sql_query(sql_to_execute, use_cache=use_cache, user_question=user_input)
+                    # SQL editing option
+                    st.markdown("### 🧾 Generated SQL")
+                    st.markdown('<span class="ai-badge">AI Generated</span> You can edit this SQL before execution:', unsafe_allow_html=True)
+                    
+                    # Allow user to edit the SQL
+                    edited_sql = st.text_area("Edit SQL Query:", value=generated_sql, height=150, key="sql_editor")
+                    
+                    # Check if SQL was edited
+                    sql_to_execute = edited_sql
+                    st.session_state.sql_edited = (edited_sql != generated_sql)
+                    
+                    # Display SQL explanation in plain English
+                    with st.spinner("🔄 Generating explanation..."):
+                        explanation = explain_query(
+                            sql_to_execute, 
+                            st.session_state.schema_info,
+                            api_key=st.session_state.api_key
+                        )
+                        st.session_state.current_explanation = explanation
                         
-                        if error:
+                        st.markdown("### 📖 Query Explanation")
+                        formatted_explanation = f"""
+                        <div class="explanation-box">
+                            <span class="ai-badge">SQL Explained</span>
+                            <div class="explanation-content">
+                                {explanation}
+                            </div>
+                        </div>
+                        """
+                        st.markdown(formatted_explanation, unsafe_allow_html=True)
+                    
+                    # Execute button for the possibly edited SQL
+                    execute_query = st.button("▶️ Execute SQL")
+                    
+                    if execute_query:
+                        try:
+                            # Execute the SQL query with caching
+                            with st.spinner("⚙️ Executing SQL query..."):
+                                df, error, from_cache = execute_sql_query(sql_to_execute, use_cache=use_cache, user_question=user_input)
+                            
+                            if error:
+                                st.error("❌ SQL Execution Error")
+                                with st.expander("See error details"):
+                                    st.markdown(f'<div class="error-box">{error}</div>', unsafe_allow_html=True)
+                            else:
+                                # Show cache indicator if result was from cache
+                                if from_cache:
+                                    st.markdown(f"""<div class="cache-indicator">
+                                        <span>⚡ Results loaded from cache</span>
+                                        <span>(Query execution time: {st.session_state.query_cache[get_cache_key(sql_to_execute)]['execution_time']:.2f}s)</span>
+                                    </div>""", unsafe_allow_html=True)
+                                
+                                # Display a message about query history
+                                st.success(f"✅ Query executed and added to history. View query history below.")
+                                
+                                st.markdown("### 📊 Query Results")
+                                
+                                # Display results with pagination if more than 10 rows
+                                if len(df) > 10:
+                                    display_paginated_results(df)
+                                else:
+                                    st.dataframe(df, use_container_width=True)
+
+                                # Generate visualization if we have numeric columns
+                                if not df.empty and df.select_dtypes(include='number').shape[1] > 0:
+                                    st.markdown("### 📈 Visualization")
+                                    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+                                    
+                                    if len(df.columns) > 1 and len(numeric_cols) > 0:
+                                        # Try to find a text column for x-axis
+                                        text_cols = df.select_dtypes(exclude=['number']).columns.tolist()
+                                        if text_cols:
+                                            # Allow selecting columns for visualization
+                                            col1, col2 = st.columns(2)
+                                            with col1:
+                                                selected_x = st.selectbox("Select X-axis column:", text_cols, index=0)
+                                            with col2:
+                                                selected_y = st.selectbox("Select Y-axis column:", numeric_cols, index=0)
+                                            
+                                            st.bar_chart(df.set_index(selected_x)[selected_y])
+                                        else:
+                                            st.bar_chart(df)
+                                    
+                                    # Add export options
+                                    st.markdown("### 📤 Export Data")
+                                    col1, col2, col3 = st.columns(3)
+                                    
+                                    # CSV Export
+                                    with col1:
+                                        csv = df.to_csv(index=False)
+                                        st.download_button(
+                                            label="📥 Download as CSV",
+                                            data=csv,
+                                            file_name="query_results.csv",
+                                            mime="text/csv",
+                                        )
+                                    
+                                    # Excel Export
+                                    with col2:
+                                        buffer = pd.ExcelWriter('query_results.xlsx', engine='xlsxwriter')
+                                        df.to_excel(buffer, index=False, sheet_name='Results')
+                                        buffer.close()
+                                        
+                                        with open('query_results.xlsx', 'rb') as f:
+                                            excel_data = f.read()
+                                        
+                                        st.download_button(
+                                            label="📊 Download as Excel",
+                                            data=excel_data,
+                                            file_name="query_results.xlsx",
+                                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                        )
+                                    
+                                    # JSON Export
+                                    with col3:
+                                        json_str = df.to_json(orient='records')
+                                        st.download_button(
+                                            label="📋 Download as JSON",
+                                            data=json_str,
+                                            file_name="query_results.json",
+                                            mime="application/json",
+                                        )
+                                
+                                # Generate follow-up questions after seeing the results
+                                with st.spinner("🔄 Generating follow-up questions..."):
+                                    follow_up_questions = generate_followup_questions(
+                                        user_input,
+                                        sql_to_execute,
+                                        st.session_state.schema_info,
+                                        api_key=st.session_state.api_key
+                                    )
+                                    st.session_state.follow_up_questions = follow_up_questions
+                                
+                                if follow_up_questions:
+                                    st.markdown("### 🔍 Follow-up Questions")
+                                    st.markdown("<span class='ai-badge'>AI Suggested</span> You might also want to ask:", unsafe_allow_html=True)
+                                    
+                                    # Create buttons for each follow-up question
+                                    for q in follow_up_questions:
+                                        if st.button(q, key=f"followup_{q}"):
+                                            st.session_state.user_input = q
+                                            st.experimental_rerun()
+
+                        except Exception as e:
                             st.error("❌ SQL Execution Error")
                             with st.expander("See error details"):
-                                st.markdown(f'<div class="error-box">{error}</div>', unsafe_allow_html=True)
-                        else:
-                            # Show cache indicator if result was from cache
-                            if from_cache:
-                                st.markdown(f"""<div class="cache-indicator">
-                                    <span>⚡ Results loaded from cache</span>
-                                    <span>(Query execution time: {st.session_state.query_cache[get_cache_key(sql_to_execute)]['execution_time']:.2f}s)</span>
-                                </div>""", unsafe_allow_html=True)
-                            
-                            # Display a message about query history
-                            st.success(f"✅ Query executed and added to history. View query history below.")
-                            
-                            st.markdown("### 📊 Query Results")
-                            
-                            # Display results with pagination if more than 10 rows
-                            if len(df) > 10:
-                                display_paginated_results(df)
-                            else:
-                                st.dataframe(df, use_container_width=True)
-
-                            # Generate visualization if we have numeric columns
-                            if not df.empty and df.select_dtypes(include='number').shape[1] > 0:
-                                st.markdown("### 📈 Visualization")
-                                numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-                                
-                                if len(df.columns) > 1 and len(numeric_cols) > 0:
-                                    # Try to find a text column for x-axis
-                                    text_cols = df.select_dtypes(exclude=['number']).columns.tolist()
-                                    if text_cols:
-                                        # Allow selecting columns for visualization
-                                        col1, col2 = st.columns(2)
-                                        with col1:
-                                            selected_x = st.selectbox("Select X-axis column:", text_cols, index=0)
-                                        with col2:
-                                            selected_y = st.selectbox("Select Y-axis column:", numeric_cols, index=0)
-                                        
-                                        st.bar_chart(df.set_index(selected_x)[selected_y])
-                                    else:
-                                        st.bar_chart(df)
-                                
-                                # Add export options
-                                st.markdown("### 📤 Export Data")
-                                col1, col2, col3 = st.columns(3)
-                                
-                                # CSV Export
-                                with col1:
-                                    csv = df.to_csv(index=False)
-                                    st.download_button(
-                                        label="📥 Download as CSV",
-                                        data=csv,
-                                        file_name="query_results.csv",
-                                        mime="text/csv",
-                                    )
-                                
-                                # Excel Export
-                                with col2:
-                                    buffer = pd.ExcelWriter('query_results.xlsx', engine='xlsxwriter')
-                                    df.to_excel(buffer, index=False, sheet_name='Results')
-                                    buffer.close()
-                                    
-                                    with open('query_results.xlsx', 'rb') as f:
-                                        excel_data = f.read()
-                                    
-                                    st.download_button(
-                                        label="📊 Download as Excel",
-                                        data=excel_data,
-                                        file_name="query_results.xlsx",
-                                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                    )
-                                
-                                # JSON Export
-                                with col3:
-                                    json_str = df.to_json(orient='records')
-                                    st.download_button(
-                                        label="📋 Download as JSON",
-                                        data=json_str,
-                                        file_name="query_results.json",
-                                        mime="application/json",
-                                    )
-                            
-                            # Generate follow-up questions after seeing the results
-                            with st.spinner("🔄 Generating follow-up questions..."):
-                                follow_up_questions = generate_followup_questions(
-                                    user_input,
-                                    sql_to_execute,
-                                    st.session_state.schema_info
-                                )
-                                st.session_state.follow_up_questions = follow_up_questions
-                            
-                            if follow_up_questions:
-                                st.markdown("### 🔍 Follow-up Questions")
-                                st.markdown("<span class='ai-badge'>AI Suggested</span> You might also want to ask:", unsafe_allow_html=True)
-                                
-                                # Create buttons for each follow-up question
-                                for q in follow_up_questions:
-                                    if st.button(q, key=f"followup_{q}"):
-                                        st.session_state.user_input = q
-                                        st.experimental_rerun()
-
-                    except Exception as e:
-                        st.error("❌ SQL Execution Error")
-                        with st.expander("See error details"):
-                            st.markdown(f'<div class="error-box">{str(e)}</div>', unsafe_allow_html=True)
-                            st.code(traceback.format_exc(), language="python")
-            
-            except Exception as e:
-                st.error("❌ Error Generating SQL")
-                with st.expander("See error details"):
-                    st.markdown(f'<div class="error-box">{str(e)}</div>', unsafe_allow_html=True)
-                    st.code(traceback.format_exc(), language="python")
+                                st.markdown(f'<div class="error-box">{str(e)}</div>', unsafe_allow_html=True)
+                                st.code(traceback.format_exc(), language="python")
+                
+                except Exception as e:
+                    st.error("❌ Error Generating SQL")
+                    with st.expander("See error details"):
+                        st.markdown(f'<div class="error-box">{str(e)}</div>', unsafe_allow_html=True)
+                        st.code(traceback.format_exc(), language="python")
 
 # Display Query History Report Section if there are queries in history
 if 'query_history' in st.session_state and len(st.session_state.query_history) > 0:

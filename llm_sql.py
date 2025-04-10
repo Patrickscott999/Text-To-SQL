@@ -3,22 +3,24 @@ import json
 import logging
 from openai import OpenAI
 import re
+import streamlit as st
 
-def gpt_generate_sql(user_input, schema_info):
+def gpt_generate_sql(user_input, schema_info, api_key=None):
     """
     Generate SQL query from natural language using OpenAI's GPT.
     
     Args:
         user_input (str): The user's natural language query
         schema_info (dict or str): Dictionary containing database schema information or string with formatted schema
+        api_key (str, optional): OpenAI API key to use. If not provided, falls back to environment variable.
     
     Returns:
         str: Generated SQL query
     """
-    # Get API key from environment variable
-    api_key = os.environ.get("OPENAI_API_KEY")
+    # Get API key from parameter or environment variable
+    api_key = api_key or os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        raise ValueError("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+        raise ValueError("OpenAI API key not found. Please provide an API key.")
     
     # Format schema information for the prompt if it's a dictionary
     if isinstance(schema_info, dict):
@@ -89,21 +91,22 @@ Important rules:
         print(error_msg)
         raise Exception(error_msg)
 
-def explain_query(sql_query, schema_info):
+def explain_query(sql_query, schema_info, api_key=None):
     """
     Generate a plain English explanation of what the SQL query does.
     
     Args:
         sql_query (str): The SQL query to explain
         schema_info (dict or str): Database schema information
+        api_key (str, optional): OpenAI API key to use. If not provided, falls back to environment variable.
         
     Returns:
         str: Plain English explanation of the query
     """
-    # Get API key from environment variable
-    api_key = os.environ.get("OPENAI_API_KEY")
+    # Get API key from parameter or environment variable
+    api_key = api_key or os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        raise ValueError("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+        raise ValueError("OpenAI API key not found. Please provide an API key.")
     
     # Format schema information for context
     if isinstance(schema_info, dict):
@@ -148,21 +151,22 @@ Please provide:
         print(f"Error generating explanation: {str(e)}")
         return "Unable to generate explanation at this time."
 
-def suggest_question_improvements(user_question, schema_info):
+def suggest_question_improvements(user_question, schema_info, api_key=None):
     """
     Suggest improvements to the user's natural language question.
     
     Args:
         user_question (str): The user's original question
         schema_info (dict or str): Database schema information
+        api_key (str, optional): OpenAI API key to use. If not provided, falls back to environment variable.
         
     Returns:
         str: Suggested improved question
     """
-    # Get API key from environment variable
-    api_key = os.environ.get("OPENAI_API_KEY")
+    # Get API key from parameter or environment variable
+    api_key = api_key or os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        raise ValueError("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+        raise ValueError("OpenAI API key not found. Please provide an API key.")
     
     # Format schema information for context
     if isinstance(schema_info, dict):
@@ -203,7 +207,7 @@ Provide ONLY the improved question as your response. Do not include any explanat
         print(f"Error generating question improvement: {str(e)}")
         return ""
 
-def generate_followup_questions(user_question, sql_query, schema_info):
+def generate_followup_questions(user_question, sql_query, schema_info, api_key=None):
     """
     Generate follow-up questions based on the current query and results.
     
@@ -211,14 +215,15 @@ def generate_followup_questions(user_question, sql_query, schema_info):
         user_question (str): The user's original question
         sql_query (str): The executed SQL query
         schema_info (dict or str): Database schema information
+        api_key (str, optional): OpenAI API key to use. If not provided, falls back to environment variable.
         
     Returns:
         list: List of suggested follow-up questions
     """
-    # Get API key from environment variable
-    api_key = os.environ.get("OPENAI_API_KEY")
+    # Get API key from parameter or environment variable
+    api_key = api_key or os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        raise ValueError("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+        raise ValueError("OpenAI API key not found. Please provide an API key.")
     
     # Format schema information for context
     if isinstance(schema_info, dict):
@@ -267,17 +272,21 @@ and conversational, and should be different enough to provide new insights.
         print(f"Error generating follow-up questions: {str(e)}")
         return []
 
-def analyze_query(sql_query, schema_info=None):
+def analyze_query(sql_query, schema_info=None, api_key=None):
     """
     Analyze the SQL query for potential performance issues and suggest optimizations.
     
     Args:
         sql_query (str): The SQL query to analyze
         schema_info (dict, optional): Database schema information
+        api_key (str, optional): OpenAI API key to use. If not provided, falls back to environment variable.
         
     Returns:
         dict: Analysis results with suggestions
     """
+    # For future AI-powered deeper analysis that would require API key
+    # api_key = api_key or os.environ.get("OPENAI_API_KEY")
+    
     results = {
         'suggestions': [],
         'warnings': [],
