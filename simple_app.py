@@ -70,6 +70,19 @@ if 'improved_question' not in st.session_state:
 if 'query_history' not in st.session_state:
     st.session_state.query_history = []
 
+# Theme state
+if 'theme' not in st.session_state:
+    st.session_state.theme = "dark"  # Default to dark theme
+
+# Function to toggle theme
+def toggle_theme():
+    if st.session_state.theme == "dark":
+        st.session_state.theme = "light"
+    else:
+        st.session_state.theme = "dark"
+    # Force a rerun to apply the theme
+    st.experimental_rerun()
+
 # Function to generate cache key for a query
 def get_cache_key(query):
     # Create a hash of the query for cache key
@@ -424,7 +437,7 @@ def display_paginated_results(df):
     st.dataframe(df.iloc[start_row:end_row], use_container_width=True)
 
 # Custom CSS with additions for AI enhancements
-st.markdown("""
+dark_theme_css = """
     <style>
         .block-container {
             padding-top: 2rem;
@@ -601,9 +614,9 @@ st.markdown("""
             background: linear-gradient(135deg, rgba(76, 29, 149, 0.97) 0%, rgba(124, 58, 237, 0.97) 100%);
             color: #f5f3ff;
             border-left: 4px solid #c4b5fd;
-            padding: 20px;
-            margin: 15px 0;
-            border-radius: 10px;
+            padding: 20px 20px 5px 20px;
+            margin: 15px 0 0 0;
+            border-radius: 10px 10px 0 0;
             font-size: 16px;
             line-height: 1.6;
             box-shadow: 0 4px 15px rgba(76, 29, 149, 0.2);
@@ -612,6 +625,36 @@ st.markdown("""
             overflow-wrap: break-word;
             word-break: break-word;
         }
+        
+        /* New bullet point styling */
+        .explanation-bullet {
+            background: linear-gradient(135deg, rgba(76, 29, 149, 0.97) 0%, rgba(124, 58, 237, 0.97) 100%);
+            color: #f5f3ff;
+            padding: 8px 20px;
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.8;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, sans-serif;
+            display: flex;
+            align-items: flex-start;
+            border-left: 4px solid #c4b5fd;
+        }
+        .explanation-bullet:last-child {
+            border-radius: 0 0 10px 0;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(76, 29, 149, 0.2);
+        }
+        .bullet-point {
+            color: #c4b5fd;
+            font-weight: bold;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .bullet-text {
+            flex-grow: 1;
+        }
+        
         /* Override any HTML tags that might be displayed as text */
         .explanation-box p code, 
         .explanation-box div,
@@ -745,11 +788,232 @@ st.markdown("""
             background-color: #f3eeff;
         }
     </style>
-""", unsafe_allow_html=True)
+"""
+
+light_theme_css = """
+    <style>
+        body {
+            background-color: #ffffff;
+            color: #333333;
+        }
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .stTextInput>div>div>input {
+            background-color: #f9f9f9;
+            padding: 12px;
+            font-size: 16px;
+            color: #333333;
+            border: 1px solid #e0e0e0;
+        }
+        .stButton>button {
+            background: linear-gradient(135deg, #9333ea 0%, #a855f7 100%);
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            box-shadow: 0 3px 10px rgba(76, 29, 149, 0.2);
+            transition: all 0.3s ease;
+        }
+        .stButton>button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 29, 149, 0.3);
+        }
+        .stButton>button:active {
+            transform: translateY(0);
+        }
+        .stSpinner {
+            text-align: center;
+            color: #9333ea;
+        }
+        .st-emotion-cache-16txtl3 h1 {
+            font-weight: 700;
+            color: #6d28d9;
+        }
+        .st-emotion-cache-16txtl3 h3 {
+            color: #7c3aed;
+            margin-top: 1.5rem;
+        }
+        /* Schema viewer styling for light theme */
+        .schema-viewer {
+            font-family: 'Courier New', monospace;
+            background-color: #f5f5f5;
+            color: #333333;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #9333ea;
+            overflow: auto;
+            max-height: 500px;
+            margin-top: 10px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        .table-header {
+            font-weight: bold;
+            padding: 8px 0;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #a855f7;
+            color: #6d28d9;
+            font-size: 16px;
+        }
+        .table-name {
+            color: #cf662c;
+            font-weight: bold;
+        }
+        .column-row {
+            padding: 3px 0 3px 15px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            border-left: 1px solid #ccc;
+            margin: 2px 0;
+        }
+        .column-row.primary-key {
+            border-left: 2px solid #e89d38;
+            background-color: rgba(232, 157, 56, 0.1);
+        }
+        .column-name {
+            color: #333333;
+            margin-right: 8px;
+            font-weight: 500;
+        }
+        /* Explanation box styling for light theme */
+        .explanation-box {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.9) 0%, rgba(168, 85, 247, 0.9) 100%);
+            color: #ffffff;
+            border-left: 4px solid #c4b5fd;
+            padding: 20px 20px 5px 20px;
+            margin: 15px 0 0 0;
+            border-radius: 10px 10px 0 0;
+            font-size: 16px;
+            line-height: 1.6;
+            box-shadow: 0 4px 15px rgba(76, 29, 149, 0.15);
+            letter-spacing: 0.3px;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, sans-serif;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        /* New bullet point styling for light theme */
+        .explanation-bullet {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.9) 0%, rgba(168, 85, 247, 0.9) 100%);
+            color: #ffffff;
+            padding: 8px 20px;
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.8;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, sans-serif;
+            display: flex;
+            align-items: flex-start;
+            border-left: 4px solid #c4b5fd;
+        }
+        .explanation-bullet:last-child {
+            border-radius: 0 0 10px 0;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(76, 29, 149, 0.15);
+        }
+        .bullet-point {
+            color: #e9d5ff;
+            font-weight: bold;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        /* AI badge styling for light theme */
+        .ai-badge {
+            background-color: #e9d5ff;
+            color: #6d28d9;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-right: 10px;
+            display: inline-block;
+            box-shadow: 0 2px 5px rgba(76, 29, 149, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        /* Query History styling for light theme */
+        .query-history-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            box-shadow: 0 4px 15px rgba(76, 29, 149, 0.1);
+            border-top: 3px solid #a855f7;
+        }
+    </style>
+"""
+
+# Add keyboard shortcuts CSS and JavaScript
+keyboard_shortcuts_js = """
+<script>
+document.addEventListener('keydown', function(e) {
+    // Ctrl+Enter to run query
+    if (e.ctrlKey && e.key === 'Enter') {
+        const generateButtons = document.querySelectorAll('button');
+        for (const button of generateButtons) {
+            if (button.innerText.includes('Generate') || button.innerText.includes('Execute')) {
+                button.click();
+                break;
+            }
+        }
+    }
+    
+    // Esc to clear query field
+    if (e.key === 'Escape') {
+        const textAreas = document.querySelectorAll('textarea');
+        for (const textArea of textAreas) {
+            if (textArea.placeholder && textArea.placeholder.includes('question')) {
+                textArea.value = '';
+                // Trigger an input event to update Streamlit
+                const event = new Event('input', { bubbles: true });
+                textArea.dispatchEvent(event);
+                break;
+            }
+        }
+    }
+});
+</script>
+"""
+
+# Add keyboard shortcut info to sidebar
+keyboard_shortcut_info = """
+<div style="background-color: rgba(124, 58, 237, 0.1); padding: 10px; border-radius: 8px; margin-top: 15px;">
+    <p style="margin: 0; font-size: 14px;"><strong>⌨️ Keyboard Shortcuts:</strong></p>
+    <ul style="margin: 5px 0 0 0; padding-left: 20px; font-size: 12px;">
+        <li><code>Ctrl+Enter</code> - Run Query</li>
+        <li><code>Esc</code> - Clear Input</li>
+    </ul>
+</div>
+"""
+
+# Apply the appropriate theme CSS
+if st.session_state.theme == "dark":
+    st.markdown(dark_theme_css + keyboard_shortcuts_js, unsafe_allow_html=True)
+else:
+    st.markdown(light_theme_css + keyboard_shortcuts_js, unsafe_allow_html=True)
 
 # Sidebar for database connection
 with st.sidebar:
     st.title("🌌 Text-to-SQL AI")
+    
+    # Theme toggle
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown(f"### Theme: {st.session_state.theme.capitalize()}")
+    with col2:
+        theme_icon = "🌙" if st.session_state.theme == "dark" else "☀️"
+        if st.button(theme_icon, on_click=toggle_theme):
+            pass  # Action handled by on_click
+    
+    # Display keyboard shortcut info
+    st.markdown(keyboard_shortcut_info, unsafe_allow_html=True)
+    
+    st.markdown("---")
     
     # API Key Management
     st.header("🔑 API Key")
@@ -783,7 +1047,7 @@ with st.sidebar:
             # Clear validation status when key changes
             if 'api_key_valid' in st.session_state:
                 del st.session_state.api_key_valid
-            
+        
         api_key_status = st.empty()
         
         # Show API key validation
@@ -1042,50 +1306,160 @@ if run:
                     
                     # Display SQL explanation in plain English
                     with st.spinner("🔄 Generating explanation..."):
-                        explanation = explain_query(
-                            sql_to_execute, 
-                            st.session_state.schema_info,
-                            api_key=st.session_state.api_key
-                        )
-                        st.session_state.current_explanation = explanation
-                        
-                        # Clean the explanation - remove any unwanted HTML tags and content
-                        explanation = explanation.replace("</div>", "")
-                        # Remove any HTML tags using a more thorough approach
-                        explanation = re.sub(r'<[^>]*>', '', explanation)
-                        # Also remove any HTML entities that might cause issues
-                        explanation = explanation.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
-                        
-                        # Convert explanation text to bullet points, being careful with formatting
-                        explanation_lines = [line.strip() for line in explanation.split("\n") if line.strip()]
-                        bullet_explanation = ""
-                        
-                        for line in explanation_lines:
-                            # Remove existing bullet points or numbers if present
-                            if line.startswith(('•', '-', '*', '1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.')):
-                                # Extract the content after the bullet point or number
-                                parts = line.split(' ', 1)
-                                if len(parts) > 1:
-                                    line = parts[1].strip()
+                        try:
+                            explanation = explain_query(
+                                sql_to_execute, 
+                                st.session_state.schema_info,
+                                api_key=st.session_state.api_key
+                            )
+                            st.session_state.current_explanation = explanation
                             
-                            # Only add non-empty lines
-                            if line and not line.strip().startswith("</"):
-                                # Wrap each bullet point in a paragraph
-                                bullet_explanation += f"<p>{line}</p>\n"
-                        
-                        st.markdown("### 📖 Query Explanation")
-                        
-                        # Format the explanation as a stylish box with bullet points
-                        formatted_explanation = f"""
-                        <div class="explanation-box">
-                            <span class="ai-badge">SQL Explained</span>
-                            {bullet_explanation}
-                        </div>
-                        """
-                        st.markdown(formatted_explanation, unsafe_allow_html=True)
+                            # Clean the explanation - remove any unwanted HTML tags and content
+                            explanation = explanation.replace("</div>", "")
+                            # Remove any HTML tags using a more thorough approach
+                            explanation = re.sub(r'<[^>]*>', '', explanation)
+                            # Also remove any HTML entities that might cause issues
+                            explanation = explanation.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
+                            
+                            # Convert explanation text to bullet points using a simplified approach
+                            # to avoid HTML nesting issues
+                            st.markdown("### 📖 Query Explanation")
+                            
+                            # Create a custom container for the explanation using st.container
+                            explanation_container = st.container()
+                            
+                            with explanation_container:
+                                # Add a custom styled container without nested HTML
+                                st.markdown("""
+                                <div class="explanation-box">
+                                    <span class="ai-badge">SQL Explained</span>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                # Process and display each bullet point separately
+                                explanation_lines = [line.strip() for line in explanation.split("\n") if line.strip()]
+                                
+                                # Check if we have any explanation lines
+                                if not explanation_lines:
+                                    st.markdown("""
+                                    <div class="explanation-bullet">
+                                        <span class="bullet-point">•</span>
+                                        <span class="bullet-text">This query retrieves data from the database based on your request.</span>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                else:
+                                    for i, line in enumerate(explanation_lines):
+                                        # Remove existing bullet points or numbers if present
+                                        if line.startswith(('•', '-', '*', '1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.')):
+                                            # Extract the content after the bullet point or number
+                                            parts = line.split(' ', 1)
+                                            if len(parts) > 1:
+                                                line = parts[1].strip()
+                                        
+                                        # Only add non-empty lines that don't start with HTML tags
+                                        if line and not line.strip().startswith("<"):
+                                            st.markdown(f"""
+                                            <div class="explanation-bullet">
+                                                <span class="bullet-point">•</span>
+                                                <span class="bullet-text">{line}</span>
+                                            </div>
+                                            """, unsafe_allow_html=True)
+                        except Exception as e:
+                            # Log the error
+                            print(f"Error generating explanation: {str(e)}")
+                            
+                            # Display a fallback explanation
+                            st.markdown("### 📖 Query Explanation")
+                            
+                            explanation_container = st.container()
+                            
+                            with explanation_container:
+                                st.markdown("""
+                                <div class="explanation-box">
+                                    <span class="ai-badge">SQL Explained</span>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                st.markdown("""
+                                <div class="explanation-bullet">
+                                    <span class="bullet-point">•</span>
+                                    <span class="bullet-text">This SQL query will retrieve data from your database based on your request.</span>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                # Show actual SQL for reference since we don't have an explanation
+                                st.markdown(f"""
+                                <div class="explanation-bullet">
+                                    <span class="bullet-point">•</span>
+                                    <span class="bullet-text">The generated SQL will be executed to get your results.</span>
+                                </div>
+                                """, unsafe_allow_html=True)
                     
                     # Execute button for the possibly edited SQL
                     execute_query = st.button("▶️ Execute SQL")
+                    
+                    # SQL Analysis for optimization
+                    with st.expander("🔍 Query Analysis & Optimization", expanded=False):
+                        st.markdown('<span class="ai-badge">AI Analysis</span> Suggestions to improve your query:', unsafe_allow_html=True)
+                        
+                        try:
+                            analysis_result = analyze_query(sql_to_execute, st.session_state.schema_info, api_key=st.session_state.api_key)
+                            
+                            # Display query complexity
+                            complexity_colors = {
+                                "Simple": "#4CAF50",
+                                "Medium": "#FFA726",
+                                "Complex": "#EF5350"
+                            }
+                            
+                            complexity = analysis_result.get('complexity', 'Simple')
+                            complexity_color = complexity_colors.get(complexity, "#4CAF50")
+                            
+                            st.markdown(f"""
+                            <div style="margin-bottom: 15px;">
+                                <strong>Query Complexity:</strong> 
+                                <span style="color: {complexity_color}; font-weight: bold;">{complexity}</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # Display optimization suggestions
+                            if analysis_result.get('suggestions'):
+                                st.markdown("#### Optimization Suggestions:")
+                                
+                                for i, suggestion in enumerate(analysis_result['suggestions']):
+                                    impact_color = "#4CAF50" if suggestion['impact'] == "Low" else "#FFA726" if suggestion['impact'] == "Medium" else "#EF5350"
+                                    
+                                    st.markdown(f"""
+                                    <div style="margin-bottom: 10px; padding: 10px; border-left: 3px solid {impact_color}; background-color: rgba(124, 58, 237, 0.05);">
+                                        <strong>{suggestion['issue']}</strong>
+                                        <p style="margin: 5px 0;">{suggestion['suggestion']}</p>
+                                        <div style="font-size: 0.9em; margin-top: 5px;">
+                                            <strong>Impact:</strong> <span style="color: {impact_color};">{suggestion['impact']}</span>
+                                        </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                    
+                                    if 'example' in suggestion:
+                                        with st.expander("See example", expanded=False):
+                                            st.code(suggestion['example'], language="sql")
+                            else:
+                                st.markdown("✅ No optimization suggestions for this query.")
+                                
+                            # Display warnings if any
+                            if analysis_result.get('warnings'):
+                                st.markdown("#### Warnings:")
+                                for warning in analysis_result['warnings']:
+                                    st.warning(warning)
+                            
+                            # Display estimated impact
+                            if analysis_result.get('estimated_impact'):
+                                st.markdown("#### Estimated Impact:")
+                                for impact in analysis_result['estimated_impact']:
+                                    st.info(impact)
+                                
+                        except Exception as e:
+                            st.error(f"Error analyzing query: {str(e)}")
+                            st.markdown("Unable to provide optimization suggestions at this time.")
                     
                     if execute_query:
                         try:
