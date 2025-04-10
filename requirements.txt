@@ -1,0 +1,11 @@
+streamlit
+pandas
+openai
+plotly
+sqlite3-api
+sqlalchemy
+mysql-connector-python
+psycopg2-binary
+pyodbc
+xlsxwriter
+openpyxl 

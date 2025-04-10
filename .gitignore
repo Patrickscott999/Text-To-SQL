@@ -1,0 +1,38 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg-info/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.env/
+
+# IDE files
+.idea/
+.vscode/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Local development
+.DS_Store
+.env
+.env.local
+
+# Database files (optional, but often better to exclude)
+# Uncomment if you don't want to include your database
+# *.db
+# *.sqlite
+# *.sqlite3
+
+# Excel temp files
+~$*.xlsx
+~$*.xls
+
+# Logs
+*.log 
