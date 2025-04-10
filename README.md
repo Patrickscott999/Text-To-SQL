@@ -1,128 +1,174 @@
-# Text-to-SQL AI Converter
+# 🌌 Text-to-SQL AI Converter
 
-A powerful Streamlit application that converts natural language questions into SQL queries using OpenAI's API and executes them on various database types with a beautiful user interface.
+<div align="center">
 
-![Text-to-SQL Demo](https://example.com/demo.gif)
+![License: MIT](https://img.shields.io/badge/License-MIT-blueviolet.svg)
+![Python](https://img.shields.io/badge/Python-3.7+-8b5cf6?logo=python&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.9+-6d28d9?logo=streamlit&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-API-4c1d95?logo=openai&logoColor=white)
 
-## Features
+</div>
 
-- **Natural Language Processing**: Converts plain English to SQL using OpenAI's GPT models
-- **Multi-Database Support**: 
-  - SQLite (via file upload or path)
-  - MySQL
-  - PostgreSQL
-- **Smart Schema Visualization**: 
-  - Color-coded data types (INTEGER: Blue, TEXT: Green, REAL: Orange, DATE: Pink)
-  - Primary key and constraint indicators
-  - Intuitive formatting with proper spacing
-- **Query Enhancement**:
-  - AI-powered query explanation in plain English
-  - Question improvement suggestions
-  - Auto-generated follow-up questions based on results
-  - SQL editing capability before execution
-- **Performance Optimization**:
-  - Query caching system to avoid redundant database queries
-  - Pagination for large result sets
-- **Result Management**:
-  - Export options (CSV, Excel, JSON)
-  - Data visualization for numeric results
-- **Query History**:
-  - Track all executed queries
-  - Download query history in multiple formats
-  - Filter and clear history as needed
-- **Modern UI**:
-  - Galaxy purple theme with modern styling
-  - Responsive design with clear visual hierarchy
-  - Enhanced readability with optimal contrast
+<div align="center">
+<img src="https://example.com/demo.gif" alt="Text-to-SQL Demo" width="80%">
+</div>
 
-## Setup
+> *Transform natural language into powerful SQL queries with an intuitive, AI-powered interface. Query your data like you're having a conversation.*
 
-1. Clone this repository:
+## ✨ Features
+
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🧠 AI-Powered Translation</h3>
+      <ul>
+        <li>Natural language to SQL conversion using OpenAI's GPT models</li>
+        <li>Automatic question improvement suggestions</li>
+        <li>Plain English explanations of SQL queries</li>
+        <li>Smart follow-up questions based on results</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>🔌 Multi-Database Support</h3>
+      <ul>
+        <li>SQLite (file upload or path)</li>
+        <li>MySQL connection</li>
+        <li>PostgreSQL integration</li>
+        <li>Schema visualization with intelligent formatting</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>📊 Results Management</h3>
+      <ul>
+        <li>Pagination for large result sets</li>
+        <li>Query caching system</li>
+        <li>Export in CSV, Excel, or JSON formats</li>
+        <li>Data visualization capabilities</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>💫 Modern UI</h3>
+      <ul>
+        <li>Galaxy purple theme with gradient accents</li>
+        <li>Color-coded data types for schema</li>
+        <li>Responsive design with clear visual hierarchy</li>
+        <li>Enhanced readability with optimal contrast</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.7+
+- OpenAI API key
+- Database (or use the included sample)
+
+### Installation
+
 ```bash
+# Clone the repository
 git clone https://github.com/Patrickscott999/Text-To-SQL.git
 cd Text-To-SQL
-```
 
-2. Install dependencies:
-```bash
+# Install required packages
 pip install -r requirements.txt
-```
 
-3. Set up your OpenAI API key as an environment variable:
-```bash
-# On macOS/Linux
-export OPENAI_API_KEY=your_api_key_here
+# Set up your API key (replace with your actual key)
+export OPENAI_API_KEY="your_api_key_here"
 
-# On Windows (Command Prompt)
-set OPENAI_API_KEY=your_api_key_here
-
-# On Windows (PowerShell)
-$env:OPENAI_API_KEY = "your_api_key_here"
-```
-
-## Running the Application
-
-```bash
+# Launch the application
 streamlit run simple_app.py
 ```
 
-## Usage
+## 🔮 Usage Flow
 
-1. **Connect to a database**:
-   - Upload a SQLite database, or
-   - Enter path to a local SQLite database, or
-   - Connect to a MySQL/PostgreSQL database
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><b>Step 1</b></td>
+      <td align="center"><b>Step 2</b></td>
+      <td align="center"><b>Step 3</b></td>
+      <td align="center"><b>Step 4</b></td>
+    </tr>
+    <tr>
+      <td align="center">Connect to a database</td>
+      <td align="center">Ask a question in plain English</td>
+      <td align="center">Get AI-generated SQL with explanation</td>
+      <td align="center">View results & download history</td>
+    </tr>
+  </table>
+</div>
 
-2. **Enter your question** in natural language
+## 💬 Example Queries
 
-3. **Generate & Run SQL**: The app will:
-   - Convert your question to SQL
-   - Display an explanation of what the query does
-   - Execute the query and show results
-   - Generate visualizations when possible
-   - Suggest follow-up questions
+```
+"Show me all customers who spent more than $500."
+```
+```
+"Find the top 3 products by sales volume in the last month."
+```
+```
+"Which supplier provides the most products and how many?"
+```
+```
+"List orders with their customers and total amounts, sorted by date."
+```
 
-4. **Review Query History**:
-   - View all past queries at the bottom of the app
-   - Download history in CSV, Excel, or JSON format
+## 🗂️ Project Structure
 
-## Sample Database
+```
+Text-To-SQL/
+├── simple_app.py       # Main application with enhanced UI
+├── app.py              # Alternative simplified version
+├── llm_sql.py          # OpenAI integration module
+├── create_sample_db.py # Database generation script
+├── requirements.txt    # Dependencies
+└── sample_retail.db    # Sample SQLite database
+```
 
-The repository includes a sample retail database (`sample_retail.db`) with tables for:
-- customers
-- products
-- orders
-- order_items
-- suppliers
+## 🧩 Sample Database Schema
 
-## Example Questions
+The included `sample_retail.db` contains the following tables:
 
-You can ask questions such as:
-- "Show me all customers"
-- "What is the total amount spent by each customer?"
-- "Find products with less than 10 items in stock"
-- "Which supplier provides the most products?"
-- "Show the most recent orders with customer details"
+**customers**: Customer profiles with contact information  
+**products**: Product catalog with pricing and inventory  
+**orders**: Order headers with customer and date information  
+**order_items**: Line items linking orders and products  
+**suppliers**: Supplier information for products  
 
-## Project Structure
+## ⚠️ Troubleshooting
 
-- `simple_app.py`: Main Streamlit application with enhanced UI and features
-- `app.py`: Alternative simplified version of the application
-- `llm_sql.py`: Module for interacting with OpenAI API
-- `create_sample_db.py`: Script to regenerate the sample database
-- `requirements.txt`: Dependencies
-- `sample_retail.db`: Sample SQLite database for testing
+<details>
+<summary><b>Common Issues</b></summary>
 
-## Troubleshooting
+| Problem | Solution |
+|---------|----------|
+| OpenAI API key errors | Verify your API key is set correctly |
+| Database connection failures | Check credentials and network connectivity |
+| SQL execution errors | Review error details in the app's error section |
 
-- **OpenAI API key issues**: Verify it's set correctly in your environment
-- **Database connection problems**: Check that your database is accessible and credentials are correct
-- **SQL execution errors**: Review the detailed error information provided in the app
+</details>
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
+<div align="center">
+<img src="https://example.com/contributors.png" alt="Contributors" width="60%">
+</div>
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+  <p>Made with ❤️ by <a href="https://github.com/Patrickscott999">Patrick Scott</a></p>
+  <p>Give it a ⭐ if you found it useful!</p>
+</div> 
