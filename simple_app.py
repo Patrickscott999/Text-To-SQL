@@ -610,6 +610,10 @@ st.markdown("""
         }
         .explanation-box .explanation-content {
             margin-top: 15px;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, sans-serif;
+        }
+        .explanation-box .explanation-content {
+            line-height: 1.8;
         }
         .explanation-box strong, 
         .explanation-box b {
@@ -623,8 +627,23 @@ st.markdown("""
         .explanation-box li {
             margin-bottom: 5px;
         }
+        .explanation-box .explanation-content p {
+            margin-bottom: 12px;
+        }
         .explanation-box .ai-badge {
             margin-bottom: 10px;
+        }
+        /* Custom bullet points styling */
+        .explanation-box .explanation-content {
+            padding-left: 8px;
+        }
+        .explanation-box .explanation-content p:before {
+            content: "•";
+            color: #c4b5fd;
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
         }
         
         /* Follow-up questions styling */
@@ -1029,12 +1048,29 @@ if run:
                         )
                         st.session_state.current_explanation = explanation
                         
+                        # Convert explanation text to bullet points
+                        explanation_lines = explanation.split("\n")
+                        bullet_explanation = ""
+                        
+                        for line in explanation_lines:
+                            line = line.strip()
+                            if line:
+                                # Remove existing bullet points or numbers if present
+                                if line.startswith(('•', '-', '*', '1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.')):
+                                    # Extract the content after the bullet point or number
+                                    parts = line.split(' ', 1)
+                                    if len(parts) > 1:
+                                        line = parts[1].strip()
+                                
+                                # Wrap each bullet point in a paragraph
+                                bullet_explanation += f"<p>{line}</p>\n"
+                        
                         st.markdown("### 📖 Query Explanation")
                         formatted_explanation = f"""
                         <div class="explanation-box">
                             <span class="ai-badge">SQL Explained</span>
                             <div class="explanation-content">
-                                {explanation}
+                                {bullet_explanation}
                             </div>
                         </div>
                         """
