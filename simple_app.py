@@ -70,6 +70,10 @@ if 'improved_question' not in st.session_state:
 if 'query_history' not in st.session_state:
     st.session_state.query_history = []
 
+# Favorite queries storage
+if 'favorite_queries' not in st.session_state:
+    st.session_state.favorite_queries = []
+
 # Theme state
 if 'theme' not in st.session_state:
     st.session_state.theme = "dark"  # Default to dark theme
@@ -82,6 +86,30 @@ def toggle_theme():
         st.session_state.theme = "dark"
     # Force a rerun to apply the theme
     st.experimental_rerun()
+
+# Functions for favorite queries
+def save_favorite_query(question, sql_query):
+    """Save a query to favorites."""
+    # Check if already in favorites to avoid duplicates
+    if not any(fav['question'] == question for fav in st.session_state.favorite_queries):
+        favorite = {
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'question': question,
+            'sql_query': sql_query
+        }
+        st.session_state.favorite_queries.append(favorite)
+        return True
+    return False
+
+def remove_favorite_query(question):
+    """Remove a query from favorites."""
+    initial_length = len(st.session_state.favorite_queries)
+    st.session_state.favorite_queries = [
+        fav for fav in st.session_state.favorite_queries 
+        if fav['question'] != question
+    ]
+    # Return True if something was removed
+    return len(st.session_state.favorite_queries) < initial_length
 
 # Function to generate cache key for a query
 def get_cache_key(query):
@@ -787,6 +815,47 @@ dark_theme_css = """
         .stDataFrame tr:nth-child(even) {
             background-color: #f3eeff;
         }
+        /* Screen reader only class */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        
+        /* Add focus indicators for keyboard navigation */
+        a:focus, button:focus, input:focus, textarea:focus, select:focus {
+            outline: 2px solid #c4b5fd !important;
+            outline-offset: 2px;
+        }
+        
+        /* Favorite queries styling */
+        .favorite-query {
+            background: linear-gradient(135deg, rgba(76, 29, 149, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%);
+            border-left: 3px solid #8b5cf6;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .favorite-query:hover {
+            background: linear-gradient(135deg, rgba(76, 29, 149, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+            transform: translateX(2px);
+        }
+        .favorite-query-text {
+            color: #4c1d95;
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 """
 
@@ -945,6 +1014,48 @@ light_theme_css = """
             box-shadow: 0 4px 15px rgba(76, 29, 149, 0.1);
             border-top: 3px solid #a855f7;
         }
+        
+        /* Screen reader only class */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        
+        /* Add focus indicators for keyboard navigation */
+        a:focus, button:focus, input:focus, textarea:focus, select:focus {
+            outline: 2px solid #a855f7 !important;
+            outline-offset: 2px;
+        }
+        
+        /* Favorite queries styling for light theme */
+        .favorite-query {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+            border-left: 3px solid #a855f7;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .favorite-query:hover {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+            transform: translateX(2px);
+        }
+        .favorite-query-text {
+            color: #6d28d9;
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 """
 
@@ -1013,6 +1124,42 @@ with st.sidebar:
     # Display keyboard shortcut info
     st.markdown(keyboard_shortcut_info, unsafe_allow_html=True)
     
+    # Favorite Queries section
+    st.markdown("### ⭐ Favorite Queries")
+    
+    if not st.session_state.favorite_queries:
+        st.info("Save your favorite queries here for quick access")
+    else:
+        # Use custom HTML for better styling
+        for i, favorite in enumerate(st.session_state.favorite_queries):
+            col1, col2 = st.columns([5, 1])
+            
+            with col1:
+                # Custom styled button
+                if st.button(
+                    f"{favorite['question'][:30]}{'...' if len(favorite['question']) > 30 else ''}", 
+                    key=f"fav_btn_{i}", 
+                    use_container_width=True,
+                    help=f"Run this query: {favorite['question']}"
+                ):
+                    # Set this as the current question
+                    st.session_state.user_input = favorite['question']
+                    st.experimental_rerun()
+            
+            with col2:
+                # Delete button
+                if st.button(
+                    "🗑️", 
+                    key=f"del_fav_{i}",
+                    help="Remove from favorites"
+                ):
+                    remove_favorite_query(favorite['question'])
+                    st.experimental_rerun()
+            
+            # Add a small divider
+            st.markdown("<hr style='margin: 5px 0; opacity: 0.2;'>", unsafe_allow_html=True)
+    
+    # Add a separator before the API Key section
     st.markdown("---")
     
     # API Key Management
@@ -1037,8 +1184,17 @@ with st.sidebar:
             "Enter OpenAI API Key:",
             type="password",
             value=st.session_state.api_key,
-            help="This API key is used for all OpenAI operations and is never stored on the server."
+            help="This API key is used for all OpenAI operations and is never stored on the server.",
+            key="api_key_input",
+            placeholder="sk-..."
         )
+        
+        # Add screen reader only text for accessibility
+        st.markdown("""
+        <span class="sr-only" aria-live="polite">
+            Your API key is required to use AI features. It stays in your browser and is never stored on our servers.
+        </span>
+        """, unsafe_allow_html=True)
         
         if api_key_input != st.session_state.api_key:
             st.session_state.api_key = api_key_input
@@ -1047,7 +1203,7 @@ with st.sidebar:
             # Clear validation status when key changes
             if 'api_key_valid' in st.session_state:
                 del st.session_state.api_key_valid
-        
+                
         api_key_status = st.empty()
         
         # Show API key validation
@@ -1234,15 +1390,50 @@ if not has_valid_api_key and not st.session_state.api_key:
     """, unsafe_allow_html=True)
 
 # Main query area
-col1, col2 = st.columns([3, 1])
+col1, col2, col3 = st.columns([3, 0.5, 0.5])
 with col1:
-    user_input = st.text_input("🔍 What do you want to know? (e.g., 'Show me all customers' or 'Total order amounts by customer')")
+    user_input = st.text_input(
+        "🔍 What do you want to know? (e.g., 'Show me all customers' or 'Total order amounts by customer')",
+        help="Type your question in plain English. For example: 'Show me sales by region' or 'List customers who spent over $500'",
+        key="user_question_input",
+        value=st.session_state.get('user_input', '')
+    )
 
-# Add cache control
+# Add favorite button next to input
 with col2:
+    if st.button("⭐", help="Save current question as favorite"):
+        if user_input and st.session_state.current_sql:
+            if save_favorite_query(user_input, st.session_state.current_sql):
+                st.success("Added to favorites!")
+            else:
+                st.info("Already in favorites")
+        else:
+            st.warning("Run a query first")
+    
+# Add cache control with ARIA labels
+with col3:
     run_disabled = not st.session_state.db_connected
-    use_cache = st.checkbox("Use query cache", value=True, help="Enable to use cached results for faster performance")
-    run = st.button("🚀 Generate & Run SQL", disabled=run_disabled)
+    use_cache = st.checkbox(
+        "Cache", 
+        value=True, 
+        help="Enable to use cached results for faster performance. Disable for real-time data.",
+        key="use_cache_checkbox"
+    )
+
+# Add a run button below
+col1, col2 = st.columns([3, 1])
+with col2:
+    st.markdown("""
+    <div aria-label="Generate SQL button description" style="font-size: 0.85rem; margin-bottom: 5px; color: #6b7280;">
+        Press to convert your question to SQL
+    </div>
+    """, unsafe_allow_html=True)
+    run = st.button(
+        "🚀 Generate & Run SQL", 
+        disabled=run_disabled,
+        help="Convert your question to SQL and execute it",
+        key="generate_run_button"
+    )
 
 # Question improvement suggestion (if available)
 if st.session_state.improved_question and st.session_state.improved_question != user_input:
@@ -1396,7 +1587,16 @@ if run:
                                 """, unsafe_allow_html=True)
                     
                     # Execute button for the possibly edited SQL
-                    execute_query = st.button("▶️ Execute SQL")
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        execute_query = st.button("▶️ Execute SQL", use_container_width=True)
+                    with col2:
+                        # Star button to save as favorite
+                        if st.button("⭐", help="Save as favorite query", key="save_favorite_btn"):
+                            if save_favorite_query(user_input, sql_to_execute):
+                                st.success("Added to favorites!")
+                            else:
+                                st.info("Already in favorites")
                     
                     # SQL Analysis for optimization
                     with st.expander("🔍 Query Analysis & Optimization", expanded=False):
