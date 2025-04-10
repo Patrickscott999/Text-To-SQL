@@ -607,43 +607,29 @@ st.markdown("""
             line-height: 1.6;
             box-shadow: 0 4px 15px rgba(76, 29, 149, 0.2);
             letter-spacing: 0.3px;
-        }
-        .explanation-box .explanation-content {
-            margin-top: 15px;
             font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, sans-serif;
         }
-        .explanation-box .explanation-content {
+        .explanation-box p {
+            position: relative;
+            padding-left: 1.5em;
+            margin-bottom: 12px;
             line-height: 1.8;
+        }
+        .explanation-box p:before {
+            content: "•";
+            color: #c4b5fd;
+            font-weight: bold;
+            position: absolute;
+            left: 0.3em;
         }
         .explanation-box strong, 
         .explanation-box b {
             color: #ddd6fe;
             font-weight: 600;
         }
-        .explanation-box ul {
-            margin-top: 10px;
-            padding-left: 20px;
-        }
-        .explanation-box li {
-            margin-bottom: 5px;
-        }
-        .explanation-box .explanation-content p {
-            margin-bottom: 12px;
-        }
         .explanation-box .ai-badge {
-            margin-bottom: 10px;
-        }
-        /* Custom bullet points styling */
-        .explanation-box .explanation-content {
-            padding-left: 8px;
-        }
-        .explanation-box .explanation-content p:before {
-            content: "•";
-            color: #c4b5fd;
-            font-weight: bold;
+            margin-bottom: 15px;
             display: inline-block;
-            width: 1em;
-            margin-left: -1em;
         }
         
         /* Follow-up questions styling */
@@ -1069,9 +1055,7 @@ if run:
                         formatted_explanation = f"""
                         <div class="explanation-box">
                             <span class="ai-badge">SQL Explained</span>
-                            <div class="explanation-content">
-                                {bullet_explanation}
-                            </div>
+                            {bullet_explanation}
                         </div>
                         """
                         st.markdown(formatted_explanation, unsafe_allow_html=True)
