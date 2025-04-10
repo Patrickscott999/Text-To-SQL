@@ -12,6 +12,7 @@ import hashlib
 import traceback
 from dotenv import load_dotenv
 from openai import OpenAI
+import re
 
 # Load environment variables from .env file
 load_dotenv()
@@ -608,6 +609,20 @@ st.markdown("""
             box-shadow: 0 4px 15px rgba(76, 29, 149, 0.2);
             letter-spacing: 0.3px;
             font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, sans-serif;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        /* Override any HTML tags that might be displayed as text */
+        .explanation-box p code, 
+        .explanation-box div,
+        .explanation-box code {
+            color: inherit;
+            background: transparent;
+            font-family: inherit;
+            font-size: inherit;
+            display: inline;
+            padding: 0;
+            margin: 0;
         }
         .explanation-box p {
             position: relative;
@@ -1034,27 +1049,33 @@ if run:
                         )
                         st.session_state.current_explanation = explanation
                         
-                        # Clean the explanation - remove any unwanted HTML tags
+                        # Clean the explanation - remove any unwanted HTML tags and content
                         explanation = explanation.replace("</div>", "")
+                        # Remove any HTML tags using a more thorough approach
+                        explanation = re.sub(r'<[^>]*>', '', explanation)
+                        # Also remove any HTML entities that might cause issues
+                        explanation = explanation.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
                         
-                        # Convert explanation text to bullet points
-                        explanation_lines = explanation.split("\n")
+                        # Convert explanation text to bullet points, being careful with formatting
+                        explanation_lines = [line.strip() for line in explanation.split("\n") if line.strip()]
                         bullet_explanation = ""
                         
                         for line in explanation_lines:
-                            line = line.strip()
-                            if line:
-                                # Remove existing bullet points or numbers if present
-                                if line.startswith(('•', '-', '*', '1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.')):
-                                    # Extract the content after the bullet point or number
-                                    parts = line.split(' ', 1)
-                                    if len(parts) > 1:
-                                        line = parts[1].strip()
-                                
+                            # Remove existing bullet points or numbers if present
+                            if line.startswith(('•', '-', '*', '1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.')):
+                                # Extract the content after the bullet point or number
+                                parts = line.split(' ', 1)
+                                if len(parts) > 1:
+                                    line = parts[1].strip()
+                            
+                            # Only add non-empty lines
+                            if line and not line.strip().startswith("</"):
                                 # Wrap each bullet point in a paragraph
                                 bullet_explanation += f"<p>{line}</p>\n"
                         
                         st.markdown("### 📖 Query Explanation")
+                        
+                        # Format the explanation as a stylish box with bullet points
                         formatted_explanation = f"""
                         <div class="explanation-box">
                             <span class="ai-badge">SQL Explained</span>
