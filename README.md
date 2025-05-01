@@ -84,7 +84,7 @@ export OPENAI_API_KEY="your_api_key_here"
 # Launch the application
 streamlit run simple_app.py
 ```
-
+deployed at :https://patrickscott999-text-to-sql-simple-app-cj3yrw.streamlit.app
 ## 🔮 Usage Flow
 
 <div align="center">
